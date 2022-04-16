@@ -18,9 +18,16 @@ namespace esphome
                   // Nothing to do on setup
             }
 
-            void UartKvm::update()
+            // void UartKvm::update()
+            // {
+            //       ESP_LOGD(TAG, "update");
+            //       this->_inquire_active_bank();
+            //       this->_read_kvm_reply();
+            // }
+
+            void UartKvm::loop()
             {
-                  ESP_LOGD(TAG, "update");
+                  ESP_LOGD(TAG, "loop");
                   this->_inquire_active_bank();
                   this->_read_kvm_reply();
             }
@@ -112,8 +119,14 @@ namespace esphome
                         _dump_packet(response);
                         // KVM responds with 0 index so we add 1 to map back to the way the remote/input buttons are labeled
                         this->active_bank_ = response[4] + 1;
-                        this->active_bank_sensor_->publish_state(this->active_bank_);
                         ESP_LOGD(TAG, "active_bank: %i", this->active_bank_);
+
+                        // We don't need to tell ESPHome that the value is still the same. We only bother when state changes :)
+                        if (this->active_bank_sensor_->state != this->active_bank_)
+                        {
+                              this->active_bank_sensor_->publish_state(this->active_bank_);
+                        }
+
                         return;
                   default:
                         ESP_LOGD(TAG, "Got unknown type of packet. Ignoring: %u ", response[3]);

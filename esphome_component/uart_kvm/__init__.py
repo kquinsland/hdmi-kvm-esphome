@@ -9,7 +9,9 @@ DEPENDENCIES = ['uart']
 AUTO_LOAD = ['sensor']
 
 uart_kvm = cg.esphome_ns.namespace('uart_kvm')
-UartKvm = uart_kvm.class_('UartKvm', cg.PollingComponent, sensor.Sensor, uart.UARTDevice)
+#UartKvm = uart_kvm.class_('UartKvm', cg.PollingComponent, sensor.Sensor, uart.UARTDevice)
+UartKvm = uart_kvm.class_('UartKvm', cg.Component, sensor.Sensor, uart.UARTDevice)
+
 
 # We have 2 'properties' of the KVM that we can read over UART
 # - Current Bank / active computer
@@ -30,7 +32,9 @@ CONFIG_SCHEMA = cv.COMPONENT_SCHEMA.extend(
         ),
 
     }
-).extend(cv.polling_component_schema("5s")).extend(uart.UART_DEVICE_SCHEMA)
+).extend(uart.UART_DEVICE_SCHEMA)
+
+# ).extend(cv.polling_component_schema("5s")).extend(uart.UART_DEVICE_SCHEMA)
 
 
 async def to_code(config):
