@@ -18,26 +18,26 @@ namespace esphome
       void loop() override;
       void dump_config() override;
 
+      // API to greater ESPHome
       void set_active_bank_sensor(sensor::Sensor *sensor) { this->active_bank_sensor_ = sensor; }
       void set_buzzer_status_sensor(sensor::Sensor *sensor) { this->buzzer_status_sensor_ = sensor; }
-      void set_number_of_banks(uint32_t num_banks) { this->num_banks_ = num_banks; }
 
       // Functions to call from lambda
       void set_active_bank(int bank);
       int get_active_bank() { return this->active_bank_; }
 
       void set_buzzer_status(bool status);
-      bool get_buzzer_status() { return this->buzzer_enabled_; }
 
     protected:
       sensor::Sensor *active_bank_sensor_{nullptr};
       sensor::Sensor *buzzer_status_sensor_{nullptr};
 
-      int active_bank_;
-      bool buzzer_enabled_;
-      int num_banks_;
+      int active_bank_ = 1;
 
       static void _dump_packet(uint8_t *ptr);
+      void _inquire_active_bank();
+
+      void _read_kvm_reply();
     };
 
   } // namespace uart_kvm

@@ -10,17 +10,14 @@ namespace esphome
 
             static const char *TAG = "uart_kvm";
 
-            static const unsigned char PREAMBLE[] = {0xAA, 0xBB, 0x03};
-            static const unsigned char POSTAMBLE[] = {0xEE};
-
             // Each packet is 6 bytes
             static const uint8_t PACKET_LEN = 6;
 
+            uint8_t invocation_count = 0;
+
             void UartKvm::setup()
             {
-                  this->dump_config();
-                  // TODO: inquire about the current bank and buzzer status
-                  ESP_LOGD(TAG, "Setup: I don't do anything yet");
+                  // Nothing to do on setup
             }
 
             /*
@@ -28,110 +25,116 @@ namespace esphome
             */
             void UartKvm::loop()
             {
-                  uint8_t response[PACKET_LEN];
-                  uint8_t peeked;
-
                   /*
-                        In testing, it appears that the firmware on the KVM will dump both ascii / logs *and* bytes
-                        to the output. Ascii text shows up when buttons are pressed (usually) and almost never when
-                        issuing a command.
-
-                        We still read from the uart every time we're called... but we just have to be a bit more rigorous
-                              when it comes to doing the validation of what we read.
+                        I am waiting for feedback from the discord on this.
+                        I don't need to be called tens of times every second but I do need to be called once every few seconds.
+                        As of right now, I am just going to only do useful work every 100th invocation.
+                        At 20ms per invocation, that gives us 50 invocations per second.
+                        100/50 ~= 2 seconds
                   */
-                  // while (this->available())
-                  // {
-                  //       // Get the byte
-                  //       this->peek_byte(&peeked);
-                  //       ESP_LOGD(TAG, "peeked: %x \t %u", peeked, peeked);
 
-                  //       if (peeked != 0xee)
-                  //       {
-                  //             this->read();
-                  //             // There's nothing else for us to do so bail early
-                  //             return;
-                  //       }
-                  //       else
-                  //       {
-                  //             // We still read the byte for completeness then break out of the while loop to read/process the packet we have.
-                  //             this->read();
-                  //             ESP_LOGD(TAG, "EOM");
-                  //             break;
-                  //       }
-                  // }
-
-                  // bool read_success = read_array(response, PACKET_LEN);
-                  // if (!read_success)
-                  // {
-                  //       // Don't need this as there will be plenty of:
-                  //       //          Reading from UART timed out at byte 0!
-                  //       // in the logs
-                  //       ////
-                  //       // ESP_LOGE(TAG, "Failure reading UART bytes!");
-                  //       status_set_warning();
-                  //       return;
-                  // }
-
-                  // // Checksum is good! Extract the 'command' byte and dispatch
-                  // uint8_t pkt_type = response[2];
-                  // switch (pkt_type)
-                  // {
-                  // case 1:
-                  //       /*
-                  //             command 1: height report packet looks like this:
-
-                  //                   [0] 0xf2         (242)
-                  //                   [1] 0xf2         (242)
-                  //                   [2] 0x1          (1)
-                  //                   [3] 0x3          (3)
-                  //                   [4] 0x1          (1)
-                  //                   [5] 0x97         (151)
-                  //                   [6] 0x3          (3)
-                  //                   [7] 0x9f         (159)
-                  //                   [8] 0x7e         (126)
-
-                  //             There should be 3 params, the first two are the high/low bytes and the third has unknown purpose
-                  //             See: https://github.com/phord/Jarvis#height-report
-                  //       */
-                  //       uint8_t height_hi = response[4];  // 0x01
-                  //       uint8_t height_low = response[5]; // 0x97
-
-                  //       // 0197 is 407 ... and the display says 40.7 on it!
-                  //       this->current_pos_ = (height_hi << 8) + height_low;
-                  //       ESP_LOGD(TAG, "height: %d", this->current_pos_);
-
-                  //       // Raw input will be in tenths of $UNIT. EG 407 -> 40.7 inches
-                  //       // _to_mm(407) => 1033.78
-                  //       // 1033.78 * .001 = 1.03378
-                  //       // We will let ESPHome do the truncation for us; we define 4 decimals of accuracy so
-                  //       //   the reading will show as 1.0338m in HA. This is human friendly but still has enough
-                  //       //   precision in it so user can do meter to mm conversion (for whatever reason...) and they'll
-                  //       //   get something pretty accurate.
-                  //       this->height_sensor_->publish_state(_to_mm(this->current_pos_) * .001);
-                  //       break;
-                  // }
-
-                  // // If goto_height() has been called since we last ran
-                  // this->_adjust_height();
+                  invocation_count += 1;
+                  if (invocation_count % 100 != 0)
+                  {
+                        // ESP_LOGD(TAG, "invocation_count: %i. Bail early", invocation_count);
+                        return;
+                  }
+                  invocation_count = 0;
+                  _inquire_active_bank();
             }
 
             /*
              * Helpers
              */
 
+            void UartKvm::_inquire_active_bank()
+            {
+
+                  uint8_t pkt[] = {
+                      0xAA,
+                      0xBB,
+                      0x03,
+                      0x10,
+                      0x00,
+                      0xEE};
+                  this->write_array(pkt, PACKET_LEN);
+                  this->_read_kvm_reply();
+            }
+
+            /*
+                  Unfortunately, the KVM seems to also log ascii strings / errors to the UART.
+                  But, since we really only care about ONE TYPE of reply packet that looks like:
+
+                        0xAA 0xBB 0x03 0x11 0xXX 0xEE
+
+                  Where 0xXX will be somewhere between 0x00 and whatever the number of ports on the switch is.
+            */
+            void UartKvm::_read_kvm_reply()
+            {
+                  uint8_t response[PACKET_LEN];
+                  uint8_t peeked;
+
+                  while (this->available())
+                  {
+                        // Get the byte
+                        this->peek_byte(&peeked);
+                        ESP_LOGD(TAG, "peeked: 0x%x \t %u", peeked, peeked);
+
+                        if (peeked == 0xAA || peeked == 0xBB || (0x00 <= peeked && peeked <= 0x0F))
+                        {
+                              this->read();
+                        }
+                        else if (peeked == 0xEE)
+                        {
+                              // We still read the byte for completeness then break out of the while loop to read/process the packet we have.
+                              this->read();
+                              ESP_LOGD(TAG, "EOM");
+                              break;
+                        }
+                        else
+                        {
+                              /* I don't know how to say "clear it and move on" */
+                              this->read();
+                              break;
+                        }
+                  }
+
+                  bool read_success = read_array(response, PACKET_LEN);
+                  if (!read_success)
+                  {
+                        // Don't need this as there will be plenty of:
+                        //          Reading from UART timed out at byte 0!
+                        // in the logs
+                        ////
+                        ESP_LOGE(TAG, "Failure reading UART bytes!");
+                        status_set_warning();
+                        return;
+                  }
+
+                  // KVM responds with 0 index so we add 1 to map back to the way the remote/input buttons are labeled
+                  this->active_bank_ = response[4] + 1;
+                  this->active_bank_sensor_->publish_state(this->active_bank_);
+                  ESP_LOGD(TAG, "active_bank: %i", this->active_bank_);
+            }
+
             void UartKvm::set_active_bank(int bank)
             {
                   ESP_LOGD(TAG, "set_active_bank: bank: %i", bank);
-            }
-
-            void set_buzzer_status(bool status)
-            {
-                  ESP_LOGD(TAG, "set_buzzer_status: bank: %b", set_buzzer_status);
+                  uint8_t pkt[] = {
+                      0xAA,
+                      0xBB,
+                      0x03,
+                      0x01,
+                      bank,
+                      0xEE};
+                  _dump_packet(pkt);
+                  this->write_array(pkt, PACKET_LEN);
+                  this->_read_kvm_reply();
             }
 
             void UartKvm::_dump_packet(uint8_t *ptr)
             {
-                  return;
+
                   ESP_LOGD(TAG, "Got Bytes:");
                   for (int i = 0; i < PACKET_LEN; i++)
                   {
@@ -143,8 +146,6 @@ namespace esphome
             {
                   ESP_LOGCONFIG(TAG, "UartKvm");
                   LOG_SENSOR("", "active_bank", this->active_bank_sensor_);
-                  LOG_SENSOR("", "buzzer", this->buzzer_status_sensor_);
-                  ESP_LOGCONFIG("", "num_banks", this->num_banks_);
             }
 
       } // namespace uart_kvm
