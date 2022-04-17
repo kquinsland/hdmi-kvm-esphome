@@ -25,8 +25,6 @@ namespace esphome
       void set_active_bank(int bank);
       int get_active_bank() { return this->active_bank_; }
 
-      void set_buzzer_status(bool status);
-
     protected:
       sensor::Sensor *active_bank_sensor_{nullptr};
 
