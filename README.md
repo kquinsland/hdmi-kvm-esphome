@@ -6,8 +6,11 @@ Specifically developed for model number [`PX-UHDKVM801-2.0`](https://www.aliexpr
 Photos of the internals can be found [on my personal site](https://karlquinsland.com/hdmi-kvm-teardown-and-esphome/).
 
 
-## Using the component
 
+![](./esphome/example_ha_conf.png)
+
+
+## Using the component
 
 **Note:** It is possible to get _basic_ control over the KVM without this custom component! ESPHome has _native_ support for _writing_ to a UART. If you only need to tell the KVM what to do then you can use the native [`uart.write`](https://esphome.io/components/uart.html#uart-write-action) call!
 
