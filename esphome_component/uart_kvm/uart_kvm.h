@@ -10,14 +10,12 @@ namespace esphome
   namespace uart_kvm
   {
 
-    // class UartKvm : public PollingComponent, public sensor::Sensor, public uart::UARTDevice
     class UartKvm : public Component, public sensor::Sensor, public uart::UARTDevice
     {
     public:
       float get_setup_priority() const override { return setup_priority::LATE; }
       void setup() override;
       void loop() override;
-      // void update() override;
       void dump_config() override;
 
       // API to greater ESPHome
@@ -36,7 +34,6 @@ namespace esphome
 
       static void _dump_packet(uint8_t *ptr);
       void _inquire_active_bank();
-
       void _read_kvm_reply();
     };
 
