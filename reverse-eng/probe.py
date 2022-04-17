@@ -1,10 +1,9 @@
 """
-Trying to poke KVM
+Trying to poke KVM / verify the protocol documentation from the seller
 """
 
 import serial
 import logging
-import string
 logging.basicConfig(level=logging.DEBUG)
 
 
