@@ -5,10 +5,10 @@ Specifically developed for model number [`PX-UHDKVM801-2.0`](https://www.aliexpr
 
 Photos of the internals can be found [on my personal site](https://karlquinsland.com/hdmi-kvm-teardown-and-esphome/).
 
+When working, you should get a device page in Home Assistant like this:
 
-
+<!-- markdownlint-disable-next-line MD045 -->
 ![](./esphome/example_ha_conf.png)
-
 
 ## Using the component
 
@@ -28,15 +28,14 @@ external_components:
 
 If you have any issues, try to remove the local cache:
 
+<!-- markdownlint-disable-file MD014 -->
 ```shell
 $ rm -rf .esphome/external_components
 ```
 
-
-## Example YAML:
+## Example YAML
 
 This is not a _complete_ YAML file for ESPHome but it does illustrate how to use the custom component and to control the KVM directly with `uart.write` for the various functionalities that the custom component does NOT implement:
-
 
 ```yaml
 esphome:
@@ -158,3 +157,9 @@ uart_kvm:
 ### UART + Component
 
 You will need a TTL <-> RS232 adapter hooked up to an ESP module. I have had a lot of trouble with the cheap MAX232 clone dongles on amazon so you absolutely should do basic loopback tests and confirm signal / voltage levels with an oscilloscope if you are having trouble getting this to work!
+
+## PCB and enclosure
+
+Because "scope-creep" is my middle name, I created a simple PCB and enclosure for an ESP32 module and `TTL` <-> `UART` module.
+Details on both the PCB and enclosure can be found in the [`hardware`](./hardware/rea\
+) folder.

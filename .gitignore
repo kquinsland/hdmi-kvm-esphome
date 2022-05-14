@@ -1,4 +1,3 @@
-
 reverse-eng/.venv
-
-esphome_component/uart_kvm/__pycache__/
+reverse-eng/.virtualenv/*
+esphome/components/uart_kvm/__pycache__/*
