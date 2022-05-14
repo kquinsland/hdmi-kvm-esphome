@@ -161,4 +161,4 @@ You will need a TTL <-> RS232 adapter hooked up to an ESP module. I have had a l
 ## PCB and enclosure
 
 Because "scope-creep" is my middle name, I created a simple PCB and enclosure for an ESP32 module and `TTL` <-> `UART` module.
-Details on both the PCB and enclosure can be found in the [`hardware`](./hardware/readmd.md) folder.
+Details on both the PCB and enclosure can be found in the [`hardware`](./hardware/readme.md) folder.
